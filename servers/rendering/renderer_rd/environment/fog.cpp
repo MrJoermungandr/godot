@@ -205,9 +205,9 @@ void Fog::init_fog_shader(uint32_t p_max_directional_lights, int p_roughness_lay
 		ShaderCompiler::DefaultIdentifierActions actions;
 
 		actions.renames["TIME"] = "scene_params.time";
-		actions.renames["PI"] = _MKSTR(Math_PI);
-		actions.renames["TAU"] = _MKSTR(Math_TAU);
-		actions.renames["E"] = _MKSTR(Math_E);
+		actions.renames["PI"] = String::num(Math::PI);
+		actions.renames["TAU"] = String::num(Math::TAU);
+		actions.renames["E"] = String::num(Math::E);
 		actions.renames["WORLD_POSITION"] = "world.xyz";
 		actions.renames["OBJECT_POSITION"] = "params.position";
 		actions.renames["UVW"] = "uvw";
@@ -435,10 +435,9 @@ void Fog::VolumetricFog::init(const Vector3i &fog_size, RID p_sky_shader) {
 	fog_map = RD::get_singleton()->texture_create(tf, RD::TextureView());
 	RD::get_singleton()->set_resource_name(fog_map, "Fog map");
 
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED) || defined(APPLE_EMBEDDED_ENABLED)
 	Vector<uint8_t> dm;
-	dm.resize(fog_size.x * fog_size.y * fog_size.z * 4);
-	dm.fill(0);
+	dm.resize_zeroed(fog_size.x * fog_size.y * fog_size.z * 4);
 
 	density_map = RD::get_singleton()->storage_buffer_create(dm.size(), dm);
 	RD::get_singleton()->set_resource_name(density_map, "Fog density map");
@@ -575,7 +574,7 @@ void Fog::volumetric_fog_update(const VolumetricFogSettings &p_settings, const P
 
 			{
 				RD::Uniform u;
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED) || defined(APPLE_EMBEDDED_ENABLED)
 				u.uniform_type = RD::UNIFORM_TYPE_STORAGE_BUFFER;
 #else
 				u.uniform_type = RD::UNIFORM_TYPE_IMAGE;
@@ -595,7 +594,7 @@ void Fog::volumetric_fog_update(const VolumetricFogSettings &p_settings, const P
 
 			{
 				RD::Uniform u;
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED) || defined(APPLE_EMBEDDED_ENABLED)
 				u.uniform_type = RD::UNIFORM_TYPE_STORAGE_BUFFER;
 #else
 				u.uniform_type = RD::UNIFORM_TYPE_IMAGE;
@@ -607,7 +606,7 @@ void Fog::volumetric_fog_update(const VolumetricFogSettings &p_settings, const P
 
 			{
 				RD::Uniform u;
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED) || defined(APPLE_EMBEDDED_ENABLED)
 				u.uniform_type = RD::UNIFORM_TYPE_STORAGE_BUFFER;
 #else
 				u.uniform_type = RD::UNIFORM_TYPE_IMAGE;
@@ -914,7 +913,7 @@ void Fog::volumetric_fog_update(const VolumetricFogSettings &p_settings, const P
 		}
 		{
 			RD::Uniform u;
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED) || defined(APPLE_EMBEDDED_ENABLED)
 			u.uniform_type = RD::UNIFORM_TYPE_STORAGE_BUFFER;
 #else
 			u.uniform_type = RD::UNIFORM_TYPE_IMAGE;
@@ -925,7 +924,7 @@ void Fog::volumetric_fog_update(const VolumetricFogSettings &p_settings, const P
 		}
 		{
 			RD::Uniform u;
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED) || defined(APPLE_EMBEDDED_ENABLED)
 			u.uniform_type = RD::UNIFORM_TYPE_STORAGE_BUFFER;
 #else
 			u.uniform_type = RD::UNIFORM_TYPE_IMAGE;
@@ -937,7 +936,7 @@ void Fog::volumetric_fog_update(const VolumetricFogSettings &p_settings, const P
 
 		{
 			RD::Uniform u;
-#if defined(MACOS_ENABLED) || defined(IOS_ENABLED)
+#if defined(MACOS_ENABLED) || defined(APPLE_EMBEDDED_ENABLED)
 			u.uniform_type = RD::UNIFORM_TYPE_STORAGE_BUFFER;
 #else
 			u.uniform_type = RD::UNIFORM_TYPE_IMAGE;

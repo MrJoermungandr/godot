@@ -28,8 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef RENDERER_CANVAS_RENDER_RD_H
-#define RENDERER_CANVAS_RENDER_RD_H
+#pragma once
 
 #include "core/templates/lru.h"
 #include "servers/rendering/renderer_canvas_render.h"
@@ -485,9 +484,14 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 
 	static void _before_evict(RendererCanvasRenderRD::RIDSetKey &p_key, RID &p_rid);
 	static void _uniform_set_invalidation_callback(void *p_userdata);
+	static void _canvas_texture_invalidation_callback(bool p_deleted, void *p_userdata);
 
 	typedef LRUCache<RIDSetKey, RID, HashableHasher<RIDSetKey>, HashMapComparatorDefault<RIDSetKey>, _before_evict> RIDCache;
 	RIDCache rid_set_to_uniform_set;
+	/// Maps a CanvasTexture to its associated uniform sets, which must
+	/// be invalidated when the CanvasTexture is updated, such as changing the
+	/// diffuse texture.
+	HashMap<RID, TightLocalVector<RID>> canvas_texture_to_uniform_set;
 
 	struct Batch {
 		// Position in the UBO measured in bytes
@@ -521,7 +525,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 		uint32_t flags = 0;
 	};
 
-	HashMap<TextureState, TextureInfo, HashableHasher<TextureState>> texture_info_map;
+	HashMap<TextureState, TextureInfo, HashableHasher<TextureState>, HashMapComparatorDefault<TextureState>, PagedAllocator<HashMapElement<TextureState, TextureInfo>>> texture_info_map;
 
 	// per-frame buffers
 	struct DataBuffer {
@@ -546,8 +550,8 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 
 			uint32_t directional_light_count;
 			float tex_to_sdf;
+			float shadow_pixel_size;
 			uint32_t flags;
-			uint32_t pad2;
 		};
 
 		DataBuffer canvas_instance_data_buffers[BATCH_DATA_BUFFER_COUNT];
@@ -634,7 +638,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 	void _update_occluder_buffer(uint32_t p_size);
 
 public:
-	PolygonID request_polygon(const Vector<int> &p_indices, const Vector<Point2> &p_points, const Vector<Color> &p_colors, const Vector<Point2> &p_uvs = Vector<Point2>(), const Vector<int> &p_bones = Vector<int>(), const Vector<float> &p_weights = Vector<float>()) override;
+	PolygonID request_polygon(const Vector<int> &p_indices, const Vector<Point2> &p_points, const Vector<Color> &p_colors, const Vector<Point2> &p_uvs = Vector<Point2>(), const Vector<int> &p_bones = Vector<int>(), const Vector<float> &p_weights = Vector<float>(), int p_count = -1) override;
 	void free_polygon(PolygonID p_polygon) override;
 
 	RID light_create() override;
@@ -662,5 +666,3 @@ public:
 	RendererCanvasRenderRD();
 	~RendererCanvasRenderRD();
 };
-
-#endif // RENDERER_CANVAS_RENDER_RD_H

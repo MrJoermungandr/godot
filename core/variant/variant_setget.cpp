@@ -768,8 +768,7 @@ struct VariantIndexedSetGet_String {
 			*oob = true;
 			return;
 		}
-		char32_t result = (*VariantGetInternalPtr<String>::get_ptr(base))[index];
-		*value = String(&result, 1);
+		*value = String::chr((*VariantGetInternalPtr<String>::get_ptr(base))[index]);
 		*oob = false;
 	}
 	static void ptr_get(const void *base, int64_t index, void *member) {
@@ -779,8 +778,7 @@ struct VariantIndexedSetGet_String {
 			index += v.length();
 		}
 		OOB_TEST(index, v.length());
-		char32_t c = v[index];
-		PtrToArg<String>::encode(String(&c, 1), member);
+		PtrToArg<String>::encode(String::chr(v[index]), member);
 	}
 	static void set(Variant *base, int64_t index, const Variant *value, bool *valid, bool *oob) {
 		if (value->get_type() != Variant::STRING) {
@@ -1288,11 +1286,9 @@ Variant Variant::get(const Variant &p_index, bool *r_valid, VariantGetError *err
 void Variant::get_property_list(List<PropertyInfo> *p_list) const {
 	if (type == DICTIONARY) {
 		const Dictionary *dic = reinterpret_cast<const Dictionary *>(_data._mem);
-		List<Variant> keys;
-		dic->get_key_list(&keys);
-		for (const Variant &E : keys) {
-			if (E.is_string()) {
-				p_list->push_back(PropertyInfo(dic->get_valid(E).get_type(), E));
+		for (const KeyValue<Variant, Variant> &kv : *dic) {
+			if (kv.key.is_string()) {
+				p_list->push_back(PropertyInfo(dic->get_valid(kv.key).get_type(), kv.key));
 			}
 		}
 	} else if (type == OBJECT) {
@@ -1383,8 +1379,7 @@ bool Variant::iter_init(Variant &r_iter, bool &valid) const {
 #endif
 			Callable::CallError ce;
 			ce.error = Callable::CallError::CALL_OK;
-			Array ref;
-			ref.push_back(r_iter);
+			Array ref = { r_iter };
 			Variant vref = ref;
 			const Variant *refp[] = { &vref };
 			Variant ret = _get_obj().obj->callp(CoreStringName(_iter_init), refp, 1, ce);
@@ -1618,8 +1613,7 @@ bool Variant::iter_next(Variant &r_iter, bool &valid) const {
 #endif
 			Callable::CallError ce;
 			ce.error = Callable::CallError::CALL_OK;
-			Array ref;
-			ref.push_back(r_iter);
+			Array ref = { r_iter };
 			Variant vref = ref;
 			const Variant *refp[] = { &vref };
 			Variant ret = _get_obj().obj->callp(CoreStringName(_iter_next), refp, 1, ce);
@@ -1839,6 +1833,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1850,6 +1845,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedByteArray of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1861,6 +1857,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int32_t idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedInt32Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1872,6 +1869,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int64_t idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedInt64Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1883,6 +1881,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedFloat32Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1894,6 +1893,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedFloat64Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1905,6 +1905,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedStringArray of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1916,6 +1917,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedVector2Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1927,6 +1929,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedVector3Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1938,6 +1941,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedColorArray of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}
@@ -1949,6 +1953,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			int idx = r_iter;
 #ifdef DEBUG_ENABLED
 			if (idx < 0 || idx >= arr->size()) {
+				ERR_PRINT(vformat("iter_get: Index %d is out of bounds for PackedVector4Array of size %d.", idx, arr->size()));
 				r_valid = false;
 				return Variant();
 			}

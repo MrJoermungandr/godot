@@ -37,6 +37,7 @@
 #include "editor/gui/editor_validation_panel.h"
 #include "editor/scene_tree_dock.h"
 #include "editor/themes/editor_scale.h"
+#include "scene/gui/line_edit.h"
 #include "scene/resources/packed_scene.h"
 
 void GroupSettingsEditor::_notification(int p_what) {
@@ -404,6 +405,7 @@ void GroupSettingsEditor::_show_remove_dialog() {
 
 		VBoxContainer *vbox = memnew(VBoxContainer);
 		remove_label = memnew(Label);
+		remove_label->set_focus_mode(FOCUS_ACCESSIBILITY);
 		vbox->add_child(remove_label);
 
 		remove_check_box = memnew(CheckBox);
@@ -499,6 +501,7 @@ GroupSettingsEditor::GroupSettingsEditor() {
 	group_name = memnew(LineEdit);
 	group_name->set_h_size_flags(SIZE_EXPAND_FILL);
 	group_name->set_clear_button_enabled(true);
+	group_name->set_accessibility_name(TTRC("Group Name"));
 	group_name->connect(SceneStringName(text_changed), callable_mp(this, &GroupSettingsEditor::_group_name_text_changed));
 	group_name->connect(SceneStringName(text_submitted), callable_mp(this, &GroupSettingsEditor::_text_submitted));
 	hbc->add_child(group_name);
@@ -509,6 +512,7 @@ GroupSettingsEditor::GroupSettingsEditor() {
 
 	group_description = memnew(LineEdit);
 	group_description->set_clear_button_enabled(true);
+	group_description->set_accessibility_name(TTRC("Group Description"));
 	group_description->set_h_size_flags(SIZE_EXPAND_FILL);
 	group_description->connect(SceneStringName(text_submitted), callable_mp(this, &GroupSettingsEditor::_text_submitted));
 	hbc->add_child(group_description);

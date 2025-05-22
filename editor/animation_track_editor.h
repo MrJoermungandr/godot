@@ -28,8 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef ANIMATION_TRACK_EDITOR_H
-#define ANIMATION_TRACK_EDITOR_H
+#pragma once
 
 #include "editor/editor_data.h"
 #include "editor/editor_properties.h"
@@ -201,12 +200,14 @@ class AnimationTimelineEdit : public Range {
 	Range *h_scroll = nullptr;
 	float play_position_pos = 0.0f;
 
+	HBoxContainer *add_track_hb = nullptr;
 	HBoxContainer *len_hb = nullptr;
 	EditorSpinSlider *length = nullptr;
 	Button *loop = nullptr;
 	TextureRect *time_icon = nullptr;
 
 	MenuButton *add_track = nullptr;
+	LineEdit *filter_track = nullptr;
 	Control *play_position = nullptr; //separate control used to draw so updates for only position changed are much faster
 	HScrollBar *hscroll = nullptr;
 
@@ -404,7 +405,6 @@ public:
 	void _clear_selection(bool p_update);
 
 	AnimationMarkerEdit();
-	~AnimationMarkerEdit();
 };
 
 class AnimationTrackEdit : public Control {
@@ -446,6 +446,7 @@ class AnimationTrackEdit : public Control {
 	int track = 0;
 
 	Rect2 check_rect;
+	Rect2 icon_rect;
 	Rect2 path_rect;
 
 	Rect2 update_mode_rect;
@@ -571,6 +572,7 @@ public:
 	void set_timeline(AnimationTimelineEdit *p_timeline);
 	void set_root(Node *p_root);
 	void set_editor(AnimationTrackEditor *p_editor);
+	String get_node_name() const;
 
 	AnimationTrackEditGroup();
 };
@@ -803,9 +805,14 @@ class AnimationTrackEditor : public VBoxContainer {
 
 	void _anim_paste_keys(float p_ofs, bool p_ofs_valid, int p_track);
 
+	void _toggle_function_names();
+	Button *function_name_toggler = nullptr;
+
 	void _view_group_toggle();
+
 	Button *view_group = nullptr;
 	Button *selected_filter = nullptr;
+	Button *alphabetic_sorting = nullptr;
 
 	void _auto_fit();
 	void _auto_fit_bezier();
@@ -916,6 +923,7 @@ public:
 
 	Dictionary get_state() const;
 	void set_state(const Dictionary &p_state);
+	void clear();
 
 	void cleanup();
 
@@ -939,14 +947,17 @@ public:
 	bool is_snap_keys_enabled() const;
 	bool is_bezier_editor_active() const;
 	bool can_add_reset_key() const;
+	void _on_filter_updated(const String &p_filter);
 	float get_moving_selection_offset() const;
 	float snap_time(float p_value, bool p_relative = false);
 	float get_snap_unit();
 	bool is_grouping_tracks();
+	bool is_sorting_alphabetically();
 	PackedStringArray get_selected_section() const;
 	bool is_marker_selected(const StringName &p_marker) const;
 	bool is_marker_moving_selection() const;
 	float get_marker_moving_selection_offset() const;
+	bool is_function_name_pressed();
 
 	/** If `p_from_mouse_event` is `true`, handle Shift key presses for precise snapping. */
 	void goto_prev_step(bool p_from_mouse_event);
@@ -983,7 +994,6 @@ class AnimationTrackKeyEditEditor : public EditorProperty {
 
 public:
 	AnimationTrackKeyEditEditor(Ref<Animation> p_animation, int p_track, real_t p_key_ofs, bool p_use_fps);
-	~AnimationTrackKeyEditEditor();
 };
 
 // AnimationMarkerKeyEditEditorPlugin
@@ -1001,7 +1011,4 @@ class AnimationMarkerKeyEditEditor : public EditorProperty {
 
 public:
 	AnimationMarkerKeyEditEditor(Ref<Animation> p_animation, const StringName &p_name, bool p_use_fps);
-	~AnimationMarkerKeyEditEditor();
 };
-
-#endif // ANIMATION_TRACK_EDITOR_H

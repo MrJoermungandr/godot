@@ -87,7 +87,7 @@ public:
 	virtual bool is_valid() const override { return valid; }
 #endif
 
-#ifdef DEBUG_METHODS_ENABLED
+#ifdef DEBUG_ENABLED
 	virtual GodotTypeInfo::Metadata get_argument_meta(int p_arg) const override {
 		if (p_arg < 0) {
 			return return_value_metadata;
@@ -95,7 +95,7 @@ public:
 			return arguments_metadata.get(p_arg);
 		}
 	}
-#endif
+#endif // DEBUG_ENABLED
 
 	virtual Variant call(Object *p_object, const Variant **p_args, int p_arg_count, Callable::CallError &r_error) const override {
 #ifdef TOOLS_ENABLED
@@ -219,9 +219,9 @@ public:
 		_set_returns(p_method_info->has_return_value);
 		_set_const(p_method_info->method_flags & GDEXTENSION_METHOD_FLAG_CONST);
 		_set_static(p_method_info->method_flags & GDEXTENSION_METHOD_FLAG_STATIC);
-#ifdef DEBUG_METHODS_ENABLED
+#ifdef DEBUG_ENABLED
 		_generate_argument_types(p_method_info->argument_count);
-#endif
+#endif // DEBUG_ENABLED
 		set_argument_count(p_method_info->argument_count);
 
 		Vector<Variant> defargs;
@@ -679,7 +679,12 @@ void GDExtension::_get_library_path(GDExtensionClassLibraryPtr p_library, GDExte
 	memnew_placement(r_path, String(library_path));
 }
 
-HashMap<StringName, GDExtensionInterfaceFunctionPtr> GDExtension::gdextension_interface_functions;
+void GDExtension::_register_get_classes_used_callback(GDExtensionClassLibraryPtr p_library, GDExtensionEditorGetClassesUsedCallback p_callback) {
+#ifdef TOOLS_ENABLED
+	GDExtension *self = reinterpret_cast<GDExtension *>(p_library);
+	self->get_classes_used_callback = p_callback;
+#endif
+}
 
 void GDExtension::register_interface_function(const StringName &p_function_name, GDExtensionInterfaceFunctionPtr p_function_pointer) {
 	ERR_FAIL_COND_MSG(gdextension_interface_functions.has(p_function_name), vformat("Attempt to register interface function '%s', which appears to be already registered.", p_function_name));
@@ -799,6 +804,7 @@ void GDExtension::initialize_gdextensions() {
 	register_interface_function("classdb_register_extension_class_signal", (GDExtensionInterfaceFunctionPtr)&GDExtension::_register_extension_class_signal);
 	register_interface_function("classdb_unregister_extension_class", (GDExtensionInterfaceFunctionPtr)&GDExtension::_unregister_extension_class);
 	register_interface_function("get_library_path", (GDExtensionInterfaceFunctionPtr)&GDExtension::_get_library_path);
+	register_interface_function("editor_register_get_classes_used_callback", (GDExtensionInterfaceFunctionPtr)&GDExtension::_register_get_classes_used_callback);
 }
 
 void GDExtension::finalize_gdextensions() {
@@ -1034,9 +1040,13 @@ void GDExtension::_untrack_instance(void *p_user_data, void *p_instance) {
 	extension->instances.erase(obj->get_instance_id());
 }
 
-Vector<StringName> GDExtensionEditorPlugins::extension_classes;
-GDExtensionEditorPlugins::EditorPluginRegisterFunc GDExtensionEditorPlugins::editor_node_add_plugin = nullptr;
-GDExtensionEditorPlugins::EditorPluginRegisterFunc GDExtensionEditorPlugins::editor_node_remove_plugin = nullptr;
+PackedStringArray GDExtension::get_classes_used() const {
+	PackedStringArray ret;
+	if (get_classes_used_callback) {
+		get_classes_used_callback((GDExtensionTypePtr)&ret);
+	}
+	return ret;
+}
 
 void GDExtensionEditorPlugins::add_extension_class(const StringName &p_class_name) {
 	if (editor_node_add_plugin) {
@@ -1053,9 +1063,6 @@ void GDExtensionEditorPlugins::remove_extension_class(const StringName &p_class_
 		extension_classes.erase(p_class_name);
 	}
 }
-
-GDExtensionEditorHelp::EditorHelpLoadXmlBufferFunc GDExtensionEditorHelp::editor_help_load_xml_buffer = nullptr;
-GDExtensionEditorHelp::EditorHelpRemoveClassFunc GDExtensionEditorHelp::editor_help_remove_class = nullptr;
 
 void GDExtensionEditorHelp::load_xml_buffer(const uint8_t *p_buffer, int p_size) {
 	ERR_FAIL_NULL(editor_help_load_xml_buffer);

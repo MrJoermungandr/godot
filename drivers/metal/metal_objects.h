@@ -28,6 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#pragma once
+
 /**************************************************************************/
 /*                                                                        */
 /* Portions of this code were derived from MoltenVK.                      */
@@ -48,14 +50,11 @@
 /* permissions and limitations under the License.                         */
 /**************************************************************************/
 
-#ifndef METAL_OBJECTS_H
-#define METAL_OBJECTS_H
-
 #import "metal_device_properties.h"
 #import "metal_utils.h"
 #import "pixel_formats.h"
 
-#import "servers/rendering/rendering_device_driver.h"
+#include "servers/rendering/rendering_device_driver.h"
 
 #import <CommonCrypto/CommonDigest.h>
 #import <Foundation/Foundation.h>
@@ -65,7 +64,6 @@
 #import <zlib.h>
 #import <initializer_list>
 #import <optional>
-#import <spirv.hpp>
 
 // These types can be used in Vector and other containers that use
 // pointer operations not supported by ARC.
@@ -357,7 +355,7 @@ public:
 			DIRTY_NONE     = 0b0000'0000,
 			DIRTY_PIPELINE = 0b0000'0001, //! pipeline state
 			DIRTY_UNIFORMS = 0b0000'0010, //! uniform sets
-			DIRTY_DEPTH    = 0b0000'0100, //! depth / stenci state
+			DIRTY_DEPTH    = 0b0000'0100, //! depth / stencil state
 			DIRTY_VERTEX   = 0b0000'1000, //! vertex buffers
 			DIRTY_VIEWPORT = 0b0001'0000, //! viewport rectangles
 			DIRTY_SCISSOR  = 0b0010'0000, //! scissor rectangles
@@ -563,7 +561,7 @@ struct API_AVAILABLE(macos(11.0), ios(14.0), tvos(14.0)) BindingInfo {
 	MTLBindingAccess access = MTLBindingAccessReadOnly;
 	MTLResourceUsage usage = 0;
 	MTLTextureType textureType = MTLTextureType2D;
-	spv::ImageFormat imageFormat = spv::ImageFormatUnknown;
+	int imageFormat = 0;
 	uint32_t arrayLength = 0;
 	bool isMultisampled = false;
 
@@ -627,8 +625,11 @@ struct API_AVAILABLE(macos(11.0), ios(14.0), tvos(14.0)) UniformSet {
 struct ShaderCacheEntry;
 
 enum class ShaderLoadStrategy {
-	DEFAULT,
+	IMMEDIATE,
 	LAZY,
+
+	/// The default strategy is to load the shader immediately.
+	DEFAULT = IMMEDIATE,
 };
 
 /// A Metal shader library.
@@ -788,20 +789,20 @@ struct BoundUniformSet {
 
 class API_AVAILABLE(macos(11.0), ios(14.0), tvos(14.0)) MDUniformSet {
 private:
-	void bind_uniforms_argument_buffers(MDShader *p_shader, MDCommandBuffer::RenderState &p_state);
-	void bind_uniforms_direct(MDShader *p_shader, MDCommandBuffer::RenderState &p_state);
-	void bind_uniforms_argument_buffers(MDShader *p_shader, MDCommandBuffer::ComputeState &p_state);
-	void bind_uniforms_direct(MDShader *p_shader, MDCommandBuffer::ComputeState &p_state);
+	void bind_uniforms_argument_buffers(MDShader *p_shader, MDCommandBuffer::RenderState &p_state, uint32_t p_set_index);
+	void bind_uniforms_direct(MDShader *p_shader, MDCommandBuffer::RenderState &p_state, uint32_t p_set_index);
+	void bind_uniforms_argument_buffers(MDShader *p_shader, MDCommandBuffer::ComputeState &p_state, uint32_t p_set_index);
+	void bind_uniforms_direct(MDShader *p_shader, MDCommandBuffer::ComputeState &p_state, uint32_t p_set_index);
 
 public:
 	uint32_t index;
 	LocalVector<RDD::BoundUniform> uniforms;
 	HashMap<MDShader *, BoundUniformSet> bound_uniforms;
 
-	void bind_uniforms(MDShader *p_shader, MDCommandBuffer::RenderState &p_state);
-	void bind_uniforms(MDShader *p_shader, MDCommandBuffer::ComputeState &p_state);
+	void bind_uniforms(MDShader *p_shader, MDCommandBuffer::RenderState &p_state, uint32_t p_set_index);
+	void bind_uniforms(MDShader *p_shader, MDCommandBuffer::ComputeState &p_state, uint32_t p_set_index);
 
-	BoundUniformSet &bound_uniform_set(MDShader *p_shader, id<MTLDevice> p_device, ResourceUsageMap &p_resource_usage);
+	BoundUniformSet &bound_uniform_set(MDShader *p_shader, id<MTLDevice> p_device, ResourceUsageMap &p_resource_usage, uint32_t p_set_index);
 };
 
 class API_AVAILABLE(macos(11.0), ios(14.0), tvos(14.0)) MDPipeline {
@@ -947,8 +948,7 @@ namespace rid {
 
 // Converts an Objective-C object to a pointer, and incrementing the
 // reference count.
-_FORCE_INLINE_
-void *owned(id p_id) {
+_FORCE_INLINE_ void *owned(id p_id) {
 	return (__bridge_retained void *)p_id;
 }
 
@@ -964,17 +964,13 @@ MAKE_ID(MTLVertexDescriptor *, RDD::VertexFormatID)
 MAKE_ID(id<MTLCommandQueue>, RDD::CommandPoolID)
 
 // Converts a pointer to an Objective-C object without changing the reference count.
-_FORCE_INLINE_
-auto get(RDD::ID p_id) {
+_FORCE_INLINE_ auto get(RDD::ID p_id) {
 	return (p_id.id) ? (__bridge ::id)(void *)p_id.id : nil;
 }
 
 // Converts a pointer to an Objective-C object, and decrements the reference count.
-_FORCE_INLINE_
-auto release(RDD::ID p_id) {
+_FORCE_INLINE_ auto release(RDD::ID p_id) {
 	return (__bridge_transfer ::id)(void *)p_id.id;
 }
 
 } // namespace rid
-
-#endif // METAL_OBJECTS_H

@@ -28,8 +28,11 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef METAL_FX_RD_H
-#define METAL_FX_RD_H
+#pragma once
+
+#if defined(METAL_ENABLED) && !defined(VISIONOS_ENABLED)
+#define METAL_MFXTEMPORAL_ENABLED
+#endif
 
 #ifdef METAL_ENABLED
 
@@ -92,6 +95,8 @@ public:
 	MFXSpatialEffect();
 	~MFXSpatialEffect();
 };
+
+#ifdef METAL_MFXTEMPORAL_ENABLED
 
 struct MFXTemporalContext {
 #ifdef __OBJC__
@@ -175,8 +180,8 @@ public:
 	void process(MFXTemporalContext *p_ctx, Params p_params);
 };
 
+#endif
+
 } //namespace RendererRD
 
 #endif // METAL_ENABLED
-
-#endif // METAL_FX_RD_H

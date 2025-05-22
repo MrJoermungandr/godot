@@ -58,6 +58,15 @@ void SpringBoneCollision3D::_validate_property(PropertyInfo &p_property) const {
 	}
 }
 
+void SpringBoneCollision3D::_validate_bone_name() {
+	// Prior bone name.
+	if (!bone_name.is_empty()) {
+		set_bone_name(bone_name);
+	} else if (bone != -1) {
+		set_bone(bone);
+	}
+}
+
 Skeleton3D *SpringBoneCollision3D::get_skeleton() const {
 	SpringBoneSimulator3D *parent = Object::cast_to<SpringBoneSimulator3D>(get_parent());
 	if (!parent) {
@@ -173,6 +182,15 @@ void SpringBoneCollision3D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::QUATERNION, "rotation_offset"), "set_rotation_offset", "get_rotation_offset");
 }
 
+void SpringBoneCollision3D::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE:
+		case NOTIFICATION_PARENTED: {
+			_validate_bone_name();
+		} break;
+	}
+}
+
 Vector3 SpringBoneCollision3D::collide(const Transform3D &p_center, float p_bone_radius, float p_bone_length, const Vector3 &p_current) const {
 	return _collide(p_center, p_bone_radius, p_bone_length, p_current);
 }
@@ -180,13 +198,3 @@ Vector3 SpringBoneCollision3D::collide(const Transform3D &p_center, float p_bone
 Vector3 SpringBoneCollision3D::_collide(const Transform3D &p_center, float p_bone_radius, float p_bone_length, const Vector3 &p_current) const {
 	return Vector3(0, 0, 0);
 }
-
-#ifdef TOOLS_ENABLED
-void SpringBoneCollision3D::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_EDITOR_PRE_SAVE: {
-			sync_pose();
-		} break;
-	}
-}
-#endif // TOOLS_ENABLED

@@ -1555,10 +1555,6 @@ void EditorNode::save_resource_as(const Ref<Resource> &p_resource, const String 
 
 	List<String> preferred;
 	for (const String &E : extensions) {
-		if (p_resource->is_class("Script") && (E == "tres" || E == "res")) {
-			// This serves no purpose and confused people.
-			continue;
-		}
 		file->add_filter("*." + E, E.to_upper());
 		preferred.push_back(E);
 	}
